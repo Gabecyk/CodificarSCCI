@@ -16,8 +16,10 @@ class TicketResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'employee_email' => $this->employee_email,
             'priority' => $this->priority,
             'status' => $this->status,
+            'responsible_id' => $this->responsible_id,
             'responsible' => $this->whenLoaded('responsible', fn () => [
                 'id' => $this->responsible->id,
                 'name' => $this->responsible->name,

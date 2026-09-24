@@ -149,3 +149,6 @@ Cobertura atual (`tests/Feature`):
 - **`LeastBusyAgentStrategyTest`** — valida a distribuição automática, confirma que o responsável com menos chamados em aberto é escolhido, e que chamados `resolved`/`closed` não contam nessa carga.
 - **`ResponsibleActionTest`** — cobre a atribuição automática vs. manual, com `responsible_id` nulo, atribui automaticamente; com `responsible_id` já preenchido, respeita a escolha manual.
 - **`TicketControllerTest`** — teste de integração do endpoint `POST /api/tickets`: criação com sucesso (`201` + persistência no banco) e validação de campos obrigatórios/inválidos (`422`).
+- **`StoreTicketTest`** — confirma que um chamado criado via factory persiste corretamente com o `responsible_id` informado.
+- **`IndexTicketTest`** — confirma que `GET /api/tickets` retorna os chamados existentes com os campos esperados (`title`, `description`, `employee_email`, `priority`, `status`, `responsible_id`).
+- **`UpdateTicketTest`** — confirma que atualizar o `status` de um chamado persiste corretamente no banco.

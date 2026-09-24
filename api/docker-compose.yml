@@ -7,8 +7,13 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/var/www/html
-      - /var/www/html/vendor
+      - ./app:/var/www/html/app
+      - ./bootstrap/app.php:/var/www/html/bootstrap/app.php
+      - ./config:/var/www/html/config
+      - ./database:/var/www/html/database
+      - ./resources:/var/www/html/resources
+      - ./routes:/var/www/html/routes
+      - ./tests:/var/www/html/tests
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
