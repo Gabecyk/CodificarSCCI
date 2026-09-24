@@ -1,0 +1,18 @@
+# Sobe o sistema completo (API + banco + Adminer + front) com um único comando:
+#   docker compose up -d --build
+name: codificarscci
+
+include:
+  - api/docker-compose.yml
+
+services:
+  front:
+    build:
+      context: ./CodificarSCCI-front
+      args:
+        VITE_API_URL: http://localhost:8000/api
+    container_name: codificarscci_front
+    ports:
+      - "5173:80"
+    depends_on:
+      - app
