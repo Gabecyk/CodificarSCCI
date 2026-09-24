@@ -6,6 +6,8 @@ Backend do **Sistema de Controle de Chamados Internos**. Permite que funcionári
 
 - [Stack e decisões técnicas](#stack-e-decisões-técnicas)
 - [Arquitetura](#arquitetura)
+- [Regras de negócio](#regras-de-negócio)
+- [Decisões e trade-offs](#decisões-e-trade-offs)
 - [Rodando o projeto](#rodando-o-projeto)
   - [Opção 1 — Docker (recomendado)](#opção-1--docker-recomendado)
   - [Opção 2 — Ambiente local (PHP + Composer + Postgres)](#opção-2--ambiente-local-php--composer--postgres)
@@ -34,6 +36,48 @@ Controller → Action → Repository (interface) → Model (Eloquent)
                 ↓
         Resource (formata a resposta JSON)
 ```
+
+- **Controllers** (`app/Http/Controllers/Api`) são finos: recebem a requisição já validada, chamam uma Action e devolvem um Resource. Nenhuma regra de negócio aqui.
+- **Actions** (`app/Actions`) concentram cada caso de uso (`ListTicketsAction`, `CreateTicketAction`, `ShowTicketAction`, `UpdateTicketAction`, `ListResponsibleAction`). Uma classe por operação mantém a responsabilidade única (**S** do SOLID) e permite testar a regra sem passar pelo HTTP.
+- **Repositories** (`app/Repositories/Contracts` + `Eloquent`) escondem o acesso a dados atrás de uma interface. As Actions dependem da abstração, não do Eloquent (**D** do SOLID, inversão de dependência); o vínculo interface → implementação fica no `AppServiceProvider`. Hoje existe uma única implementação (Eloquent) — o ganho é isolamento e testabilidade, não trocar de banco.
+- **Requesters** (`app/Http/Requesters`) são `FormRequest`s por operação (`StoreTicketRequest`, `UpdateTicketRequest`): a validação e as mensagens em português ficam fora do controller.
+- **Resources** (`app/Http/Resources`) definem o formato do JSON. O contrato da API não fica preso à estrutura da tabela.
+- **Enums** (`TicketStatus`, `TicketPriority`) eliminam strings soltas: o mesmo enum valida a entrada, faz o cast no model e define o que é "em aberto".
+- **Strategy de distribuição** (`app/Services/TicketAssignment`): a `AssignmentStrategyInterface` tem uma implementação, `LeastBusyAgentStrategy`, escolhida no `AppServiceProvider`. Para criar outra regra de distribuição (por prioridade...) basta implementar a interface e trocar o vínculo, sem alterar as Actions (**O** do SOLID, aberto/fechado).
+- **Middleware `ForceJsonResponse`** (`app/Http/Middleware`), aplicado ao grupo `api`, força `Accept: application/json`. Sem ele, um cliente que esquece esse header recebe um *redirect* HTML em vez de um `422` em JSON quando a validação falha — problema que apareceu na prática ao testar pelo Postman.
+
+## Regras de negócio
+
+### Distribuição automática
+
+A `LeastBusyAgentStrategy` roda depois de criar **e** depois de atualizar um chamado:
+
+1. Se o chamado já tem `responsible_id` (o usuário escolheu manualmente), a escolha é respeitada e nada muda.
+2. Caso contrário, ele vai para o responsável com **menos chamados em aberto**. Em caso de empate, atribui o de menor `id`.
+
+A atribuição manual não tem uma classe própria: escolher o responsável é apenas enviar `responsible_id` no payload. No front, a opção "Atribuir automaticamente" envia `responsible_id: null`.
+
+### O que é "em aberto"
+
+O modelo de status é: `open` → `in_progress` → `resolved` → `closed`.
+
+**Um chamado está "em aberto" quando o status é `open` ou `in_progress`.** `resolved` e `closed` são considerados concluídos e não entram na carga de ninguém.
+
+Justificativa:
+
+- **`in_progress` conta como carga.** O objetivo do cliente é equilibrar o trabalho: quem está no meio de um atendimento continua ocupado. Se só `open` contasse, quem pegou vários chamados e já começou a trabalhar apareceria como "livre" e receberia ainda mais.
+- **`resolved` não conta.** O trabalho do responsável terminou; falta apenas confirmação ou encerramento formal. Contá-lo penalizaria quem resolve rápido.
+- **`closed` não conta**, por ser estado terminal.
+
+### Ciclo de vida
+
+- Todo chamado **nasce `open`**: o campo `status` não é aceito na criação (`StoreTicketRequest`) e o banco aplica o padrão. Só a edição (`PUT`) altera o status.
+- `opened_at` é preenchido pelo banco no momento da criação.
+
+## Decisões e trade-offs
+
+- **Sem cadastro de responsáveis** (itens 3.2 e 3.3): eles só precisam existir e ser selecionáveis, então há apenas listagem (`GET /api/responsibles`) e seeder.
+- **`APP_DEBUG=true` e credenciais simples** no Docker são só para desenvolvimento local.
 
 ## Rodando o projeto
 
