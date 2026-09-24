@@ -85,6 +85,8 @@ Justificativa:
 
 Único pré-requisito: **Docker** e **Docker Compose** instalados. Não precisa de PHP, Composer ou Postgres na máquina.
 
+> Este compose sobe **só a API**. Para subir API e front juntos, rode `docker compose up -d --build` na raiz do repositório (ver o [README da raiz](../README.md)).
+
 ```bash
 cd api
 docker compose up -d --build
@@ -98,13 +100,7 @@ Isso sobe três containers:
 | `db` | localhost:5432 | PostgreSQL (dados persistem no volume `pgdata`) |
 | `adminer` | http://localhost:8080 | Cliente de banco pelo navegador (servidor `db`, usuário `postgres`, senha `root`, banco `codificar`) |
 
-Popule o banco com os responsáveis e chamados de exemplo (ver [Seeders](#seeders)):
-
-```bash
-docker compose exec app php artisan db:seed
-```
-
-Rodar os testes:
+Na subida, o container roda as migrations e popula o banco com os responsáveis e chamados de exemplo, sem duplicar dados a cada reinício (ver [Seeders](#seeders)).
 
 ```bash
 docker compose exec app php artisan test
@@ -178,7 +174,7 @@ php artisan db:seed
 docker compose exec app php artisan db:seed
 ```
 
-> Os seeders não são idempotentes (`email` é `unique` em `responsibles`) — rodar duas vezes sem resetar o banco gera erro de chave duplicada. Para recomeçar do zero: `php artisan migrate:fresh --seed`.
+Para recomeçar do zero: `php artisan migrate:fresh --seed`.
 
 ## Testes
 

@@ -15,7 +15,19 @@ Erros de validação da API (`422`) aparecem embaixo de cada campo; falhas de re
 
 ## Como rodar
 
-Pré-requisitos: **Node.js 20+** e a **API rodando** (ver [README da API](../api/README.md); com Docker: `cd api && docker compose up -d --build && docker compose exec app php artisan db:seed`).
+### Opção 1 — Docker, junto com a API (recomendado)
+
+Na **raiz do repositório**, um único comando sobe API, banco e front (só precisa do Docker):
+
+```bash
+docker compose up -d --build
+```
+
+O front fica em http://localhost:5173, servido pelo nginx a partir de um build de produção (`Dockerfile` multi-stage: o Node gera o `dist/` e só ele vai para a imagem final). A URL da API vista pelo navegador (`http://localhost:8000/api`) é embutida no build pelo argumento `VITE_API_URL` do `docker-compose.yml`. Depois de editar o código, `docker compose up -d --build front` gera um novo build.
+
+### Opção 2 — Desenvolvimento local (hot reload)
+
+Pré-requisitos: **Node.js 20+** e a **API rodando** (por exemplo, `cd api && docker compose up -d --build`; ver o [README da API](../api/README.md)).
 
 ```bash
 cd CodificarSCCI-front
@@ -23,7 +35,7 @@ npm install
 npm run dev
 ```
 
-Acesse http://localhost:5173.
+Acesse http://localhost:5173 (se o container `front` estiver de pé, pare-o antes com `docker compose stop front` para liberar a porta).
 
 Por padrão o front chama `http://localhost:8000/api`. Para apontar para outra URL, copie `.env.example` para `.env` e ajuste `VITE_API_URL`.
 

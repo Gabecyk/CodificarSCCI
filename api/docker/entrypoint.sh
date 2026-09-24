@@ -15,9 +15,6 @@ set_env() {
     fi
 }
 
-# O .env é montado do host (bind mount) e pode conter valores de outro
-# ambiente (ex.: DB_HOST=127.0.0.1 de um setup local). Garantimos aqui que
-# ele sempre reflita o que o docker-compose configurou para este container.
 set_env "APP_ENV" "${APP_ENV:-local}"
 set_env "APP_DEBUG" "${APP_DEBUG:-true}"
 set_env "APP_URL" "${APP_URL:-http://localhost:8000}"
@@ -32,6 +29,8 @@ if ! grep -q "^APP_KEY=base64:" .env; then
     php artisan key:generate --force
 fi
 
+# Ganrante de gerar o migration e seed do banco de dados, mesmo que o container seja reiniciado.
 php artisan migrate --force
+php artisan db:seed --force
 
 exec "$@"
