@@ -12,7 +12,6 @@ Backend do **Sistema de Controle de Chamados Internos**. Permite que funcionári
 - [Endpoints da API](#endpoints-da-api)
 - [Seeders](#seeders)
 - [Testes](#testes)
-- [Decisões e trade-offs](#decisões-e-trade-offs)
 
 ## Stack e decisões técnicas
 
