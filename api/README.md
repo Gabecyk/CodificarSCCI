@@ -1,59 +1,152 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CodificarSCCI — API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend do **Sistema de Controle de Chamados Internos**. Permite que funcionários abram chamados (título, descrição, prioridade, status) e que o time de suporte os acompanhe, com atribuição automática ao responsável menos sobrecarregado.
 
-## About Laravel
+## Sumário
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- [Stack e decisões técnicas](#stack-e-decisões-técnicas)
+- [Arquitetura](#arquitetura)
+- [Rodando o projeto](#rodando-o-projeto)
+  - [Opção 1 — Docker (recomendado)](#opção-1--docker-recomendado)
+  - [Opção 2 — Ambiente local (PHP + Composer + Postgres)](#opção-2--ambiente-local-php--composer--postgres)
+- [Endpoints da API](#endpoints-da-api)
+- [Seeders](#seeders)
+- [Testes](#testes)
+- [Decisões e trade-offs](#decisões-e-trade-offs)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack e decisões técnicas
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Tecnologia | Por quê |
+|---|---|
+| **PHP 8.2 + Laravel 12** | Framework maduro para uma API REST rápida de construir com qualidade — validação, Eloquent ORM, container de injeção de dependência, testes integrados de fábrica. Reduz atrito de configuração e deixa o tempo disponível focado nas regras de negócio do desafio (arquitetura, distribuição automática, testes) em vez de infraestrutura. |
+| **PostgreSQL** | Banco relacional robusto e gratuito, com bom suporte a `ENUM`/constraints e ótima integração com Docker — sem motivo para usar algo mais pesado neste cenário. |
+| **Docker + docker-compose** | Atende diretamente o requisito de "executável localmente por qualquer pessoa do time" sem exigir PHP/Postgres instalados na máquina — só Docker. Ver [Opção 1](#opção-1--docker-recomendado). |
+| **PHPUnit (testes de Feature)** | O próprio desafio pede foco em fundamentos ("testes, SOLID, DRY" > features extras). Os testes usam SQLite em memória (`phpunit.xml`), então rodam isolados do Postgres de desenvolvimento — rápidos e sem efeito colateral. |
+| **Adminer** (via Docker) | Visualização do banco pelo navegador sem precisar instalar pgAdmin/DBeaver na máquina — reduzir fricção pra quem só quer conferir os dados. |
 
-## Learning Laravel
+## Arquitetura
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+O backend segue uma arquitetura em camadas, pensada para deixar a lógica de negócio testável e desacoplada do Eloquent/HTTP:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+Controller → Action → Repository (interface) → Model (Eloquent)
+                ↓
+        Requester (FormRequest, validação)
+                ↓
+        Resource (formata a resposta JSON)
+```
 
-## Laravel Sponsors
+## Rodando o projeto
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Opção 1 — Docker (recomendado)
 
-### Premium Partners
+Único pré-requisito: **Docker** e **Docker Compose** instalados. Não precisa de PHP, Composer ou Postgres na máquina.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+cd api
+docker compose up -d --build
+```
 
-## Contributing
+Isso sobe três containers:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Serviço | URL | O que é |
+|---|---|---|
+| `app` | http://localhost:8000 | API Laravel (migrations rodam automaticamente na subida) |
+| `db` | localhost:5432 | PostgreSQL (dados persistem no volume `pgdata`) |
+| `adminer` | http://localhost:8080 | Cliente de banco pelo navegador (servidor `db`, usuário `postgres`, senha `root`, banco `codificar`) |
 
-## Code of Conduct
+Popule o banco com os responsáveis e chamados de exemplo (ver [Seeders](#seeders)):
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+docker compose exec app php artisan db:seed
+```
 
-## Security Vulnerabilities
+Rodar os testes:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+docker compose exec app php artisan test
+```
 
-## License
+Parar tudo (mantendo os dados) / apagando os dados:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+docker compose down        # mantém o volume do Postgres
+docker compose down -v     # apaga também os dados
+```
+
+### Opção 2 — Ambiente local (PHP + Composer + Postgres)
+
+Pré-requisitos: **PHP 8.2+**, **Composer**, **PostgreSQL** rodando localmente.
+
+```bash
+cd api
+composer install
+cp .env.example .env
+php artisan key:generate
+```
+
+Edite o `.env` com as credenciais do seu Postgres local:
+
+```
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=codificar
+DB_USERNAME=postgres
+DB_PASSWORD=sua_senha
+```
+
+Crie o banco `codificar` no Postgres, depois rode as migrations e os seeders:
+
+```bash
+php artisan migrate --seed
+```
+
+Suba o servidor:
+
+```bash
+php artisan serve
+```
+
+A API fica disponível em `http://127.0.0.1:8000`.
+
+## Endpoints da API
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/tickets` | Lista chamados, com paginação e filtros opcionais (`status`, `priority`, `responsible_id`) |
+| `POST` | `/api/tickets` | Cria um chamado. Nasce sempre com status `open`; se `responsible_id` não for enviado, é atribuído automaticamente ao responsável com menos chamados em aberto |
+| `GET` | `/api/tickets/{id}` | Detalhe de um chamado |
+| `PUT` | `/api/tickets/{id}` | Atualiza um chamado (título, descrição, prioridade, status, responsável) |
+| `GET` | `/api/responsibles` | Lista os responsáveis disponíveis para atribuição |
+
+Todas as respostas são JSON. Erros de validação retornam `422` com o detalhe por campo; recurso não encontrado retorna `404`.
+
+## Seeders
+
+O `DatabaseSeeder` popula:
+
+- **`ResponsibleSeeder`** 
+- **`TicketSeeder`** 
+
+```bash
+php artisan db:seed
+# ou, via Docker:
+docker compose exec app php artisan db:seed
+```
+
+> Os seeders não são idempotentes (`email` é `unique` em `responsibles`) — rodar duas vezes sem resetar o banco gera erro de chave duplicada. Para recomeçar do zero: `php artisan migrate:fresh --seed`.
+
+## Testes
+
+```bash
+php artisan test
+# ou, via Docker:
+docker compose exec app php artisan test
+```
+
+Cobertura atual (`tests/Feature`):
+
+- **`LeastBusyAgentStrategyTest`** — valida a distribuição automática, confirma que o responsável com menos chamados em aberto é escolhido, e que chamados `resolved`/`closed` não contam nessa carga.
+- **`ResponsibleActionTest`** — cobre a atribuição automática vs. manual, com `responsible_id` nulo, atribui automaticamente; com `responsible_id` já preenchido, respeita a escolha manual.
+- **`TicketControllerTest`** — teste de integração do endpoint `POST /api/tickets`: criação com sucesso (`201` + persistência no banco) e validação de campos obrigatórios/inválidos (`422`).
