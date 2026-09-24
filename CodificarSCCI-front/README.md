@@ -39,9 +39,9 @@ npm run preview  # serve o build localmente
 
 | Tecnologia | Por quê |
 |---|---|
-| **React 19 + Vite** | Setup rápido, HMR e build enxuto; o estado local com hooks (`useState`/`useEffect`) basta para o tamanho do problema, sem precisar de uma lib de estado global. |
+| **React 19 + Vite** | Setup rápido; o estado local com hooks (`useState`/`useEffect`) basta para esse tamanho do problema, sem precisar de uma lib de estado global. |
 | **React Router** | Cada tela tem URL própria (link direto para um chamado, botão "voltar" do navegador funcionando). |
-| **Tailwind CSS 4** | Framework CSS moderno pedido no desafio: interface organizada e funcional sem escrever CSS customizado. |
+| **Tailwind CSS 4** | Framework CSS moderno. |
 | **`fetch` nativo** (`src/api`) | A API tem 5 endpoints; um wrapper fino (`client.js`) que normaliza erros (`ApiError` com `status` e `errors` por campo) evita uma dependência como axios. |
 
 ### Organização
@@ -60,7 +60,4 @@ Páginas concentram estado e chamadas à API; componentes de apresentação rece
 
 ### Trade-offs
 
-- **Sem busca por texto**: a API filtra por `status`, `priority` e `responsible_id`, mas não por texto; filtrar só a página atual no cliente daria resultado enganoso com paginação.
-- **Responsáveis carregados só da primeira página** de `/api/responsibles` (15 itens) — suficiente para o escopo (poucos responsáveis, sem CRUD).
-- **Sem testes automatizados no front** nesta versão; a validação dos fluxos (criar com atribuição automática/manual, erro 422, editar status, filtro, 404) foi feita de ponta a ponta contra a API real.
-- **`critical` além de baixa/média/alta**: o backend aceita uma 4ª prioridade ("Crítica"); a UI a expõe.
+- **Sem testes automatizados no front** nesta versão; a validação dos fluxos (criar com atribuição automática/manual, erro 422, editar status, filtro, 404) foi feita de ponta a ponta na API real.
