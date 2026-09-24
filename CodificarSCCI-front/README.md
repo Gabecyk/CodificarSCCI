@@ -30,6 +30,7 @@ Por padrão o front chama `http://localhost:8000/api`. Para apontar para outra U
 Outros comandos:
 
 ```bash
+npm test         # testes unitários (Vitest)
 npm run lint     # oxlint
 npm run build    # build de produção em dist/
 npm run preview  # serve o build localmente
@@ -43,6 +44,7 @@ npm run preview  # serve o build localmente
 | **React Router** | Cada tela tem URL própria (link direto para um chamado, botão "voltar" do navegador funcionando). |
 | **Tailwind CSS 4** | Framework CSS moderno. |
 | **`fetch` nativo** (`src/api`) | A API tem 5 endpoints; um wrapper fino (`client.js`) que normaliza erros (`ApiError` com `status` e `errors` por campo) evita uma dependência como axios. |
+| **Vitest + Testing Library** | Vitest reaproveita a configuração do Vite (sem Babel/Jest à parte); Testing Library testa o que o usuário vê e faz (rótulos, botões, textos), não detalhes de implementação. |
 
 ### Organização
 
@@ -58,6 +60,17 @@ src/
 
 Páginas concentram estado e chamadas à API; componentes de apresentação recebem dados e callbacks por props. Requisições usam `AbortController` para cancelar respostas obsoletas ao trocar filtro/página/rota.
 
-### Trade-offs
+## Testes
 
-- **Sem testes automatizados no front** nesta versão; a validação dos fluxos (criar com atribuição automática/manual, erro 422, editar status, filtro, 404) foi feita de ponta a ponta na API real.
+```bash
+npm test
+```
+
+São **11 testes unitários** A API é sempre simulada (`fetch` e `endpoints` mockados), então rodam sem o backend no ar.
+
+| Arquivo | O que garante |
+|---|---|
+| `src/api/client.test.js` (4) | Contrato com a API: query string ignora filtros vazios; corpo enviado como JSON com os headers certos; `422` vira `ApiError` com os erros por campo; falha de rede vira `ApiError` com mensagem amigável. |
+| `src/components/TicketForm.test.jsx` (4) | Payload enviado ao salvar: "Atribuir automaticamente" manda `responsible_id: null` (item 4.1) e o status não aparece na criação; escolha manual manda o id numérico (item 4.2); na edição o formulário vem preenchido e permite mudar o status; erros de validação da API aparecem embaixo do campo. |
+| `src/pages/TicketListPage.test.jsx` (3) | Listagem (item 5): mostra os chamados com link para o detalhe, responsável e paginação; filtrar por status busca de novo na API a partir da página 1; mensagem de erro quando a API está fora do ar. |
+
