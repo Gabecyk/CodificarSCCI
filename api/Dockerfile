@@ -18,6 +18,12 @@ RUN composer install --no-interaction --no-scripts --no-autoloader --prefer-dist
 COPY . .
 RUN composer dump-autoload --optimize
 
+# .dockerignore exclui o conteúdo dessas pastas (evita copiar cache velho do
+# host), mas o Laravel precisa que elas existam para escrever views/sessões
+# compiladas e logs.
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
