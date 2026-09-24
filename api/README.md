@@ -188,11 +188,14 @@ php artisan test
 docker compose exec app php artisan test
 ```
 
-Cobertura atual (`tests/Feature`):
+São **20 testes** (`tests/Feature`) contra o banco em memória. A suíte é enxuta de propósito: cada teste protege uma regra do desafio ou um fluxo principal, em vez de perseguir cobertura total. Os de endpoint fazem requisições HTTP reais (`getJson`/`postJson`/`putJson`), passando por Controller → Action → Repository → banco.
 
-- **`LeastBusyAgentStrategyTest`** — valida a distribuição automática, confirma que o responsável com menos chamados em aberto é escolhido, e que chamados `resolved`/`closed` não contam nessa carga.
-- **`ResponsibleActionTest`** — cobre a atribuição automática vs. manual, com `responsible_id` nulo, atribui automaticamente; com `responsible_id` já preenchido, respeita a escolha manual.
-- **`TicketControllerTest`** — teste de integração do endpoint `POST /api/tickets`: criação com sucesso (`201` + persistência no banco) e validação de campos obrigatórios/inválidos (`422`).
-- **`StoreTicketTest`** — confirma que um chamado criado via factory persiste corretamente com o `responsible_id` informado.
-- **`IndexTicketTest`** — confirma que `GET /api/tickets` retorna os chamados existentes com os campos esperados (`title`, `description`, `employee_email`, `priority`, `status`, `responsible_id`).
-- **`UpdateTicketTest`** — confirma que atualizar o `status` de um chamado persiste corretamente no banco.
+| Arquivo | O que garante |
+|---|---|
+| `LeastBusyAgentStrategyTest` | **Distribuição automática (itens 4.1 e 4.3):** a estratégia escolhe o responsável com menos chamados em aberto, e `resolved`/`closed` não contam nessa carga. |
+| `TicketControllerTest` (`POST /api/tickets`) | Criação com sucesso (`201`, dados gravados, status `open`); `422` sem gravar nada para título ausente e prioridade inválida; atribuição automática via API (menos chamados em aberto, `in_progress` conta como carga); escolha manual respeitada (item 4.2); o `status` enviado pelo cliente é ignorado. |
+| `UpdateTicketTest` (`PUT /api/tickets/{id}`) | Atualiza campos e status (`200`); `422` sem alterar o chamado; `404` para chamado inexistente; `responsible_id: null` redistribui automaticamente. |
+| `IndexTicketTest` (`GET /api/tickets`) | Campos retornados, ordenação (mais recentes primeiro), filtro por status e paginação. |
+| `ShowTicketTest` (`GET /api/tickets/{id}`) | Retorna o chamado (`200`) e `404` quando não existe. |
+| `IndexResponsibleTest` (`GET /api/responsibles`) | Lista os responsáveis disponíveis para atribuição. |
+
